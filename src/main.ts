@@ -1,24 +1,91 @@
 import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+import { dialogue, MessageOptions, isNext, isOptions } from './dialogue'
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+
+let currentOptions: HTMLElement | null = null
+
+
+const root = document.querySelector<HTMLDivElement>('#app')!
+
+
+function navigateCallback({text, next}: {text: string, next: string}): () => void {
+    /**
+     * Create navigation callback for buttons.
+     */
+
+    return () => {
+        addText(text);
+        navigate(next);
+    };
+}
+
+
+function removeOptions() {
+    /**
+     * Remove options button group if exists.
+     */
+
+    if (currentOptions !== null) {
+        root.removeChild(currentOptions)
+    }
+
+    currentOptions = null
+}
+
+
+function addOptions(messageOptions: MessageOptions) {
+    /**
+     * Add options button group to dialogue.
+     */
+
+    removeOptions()
+
+    const buttonGroup = document.createElement("div")
+    buttonGroup.className = "dialogue-button-group"
+
+    for (let option of messageOptions.options) {
+        const button = document.createElement("button")
+        button.textContent = option.text
+        button.onclick = navigateCallback(option)
+
+        buttonGroup.appendChild(button)
+    }
+
+    root.appendChild(buttonGroup);
+    currentOptions = buttonGroup;
+}
+
+
+function addText(text: string) {
+    /**
+     * Add text directly to dialogue.
+     */
+
+    const pElement = document.createElement("p")
+    pElement.textContent = text
+    root.appendChild(pElement)
+}
+
+
+function navigate(label: string) {
+    /**
+     * Navigate to label in dialogue tree.
+     */
+
+    const dialogueLocation = dialogue[label]
+
+    if (isNext(dialogueLocation)) {
+        addText(dialogueLocation.text)
+        navigate(dialogueLocation.next)
+    } else if (isOptions(dialogueLocation)) {
+        addText(dialogueLocation.text)
+        addOptions(dialogueLocation)
+    } else {
+        removeOptions()
+        addText(dialogueLocation.text)
+    }
+}
+
+
+navigate("begin")  // Begin navigation
